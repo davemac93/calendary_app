@@ -4,10 +4,10 @@ from sqlalchemy.orm import Session
 from typing import List
 
 
-from ..schemas import RegisterUser, LoginUser, RespondUser
+from ..schemas import RegisterUser, RespondUser
 from ..models import User
-from ..core import get_db, create_access_token, verify_token, authenticate_user, verify_password, get_password_hash, check_user_exists
-from ..core import settings
+from ..core import create_access_token, verify_token, authenticate_user, get_password_hash, check_user_exists
+from ..db import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 router = APIRouter(prefix="/api/auth", tags=["auth"])

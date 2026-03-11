@@ -4,7 +4,7 @@ from typing import List
 
 from ..schemas import CreateEvent, UpdateEvent, ResponseEvent
 from ..models import Event
-from ..core import get_db
+from ..db import get_db
 
 router = APIRouter(prefix="/api/events", tags=["events"])
 

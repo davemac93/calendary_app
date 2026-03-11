@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from backend.app.core.security import verify_password
+from pwdlib.exceptions import UnknownHashError
+
 from sqlalchemy.orm import Session
 
-from backend.app import models
 from .config import settings
+from .security import verify_password
 
 
 def create_access_token(data: dict) -> str:
@@ -26,14 +27,24 @@ def verify_token(token: str, credentials_exception) -> str:
     except JWTError:
         raise credentials_exception
 
-def authenticate_user(db: Session, username: str, password: str) -> models.User | bool:
-    user = db.query(models.User).filter(models.User.username == username).first()
+
+def authenticate_user(db: Session, username: str, password: str):
+    from ..models import User
+    user = db.query(User).filter(User.username == username).first()
+
     if not user:
-        return False
-    if not verify_password(password, user.password):
-        return False
-    
+        return None
+
+    try:
+        # If verify_password fails due to a bad hash format, it triggers the except block
+        if not verify_password(password, user.password):
+            return None
+    except (UnknownHashError, ValueError, TypeError):
+        # We catch the traceback here and return None to signal 'auth failed'
+        return None
+
     return user
 
 def check_user_exists(db: Session, username: str) -> bool:
-    return db.query(models.User).filter(models.User.username == username).first() is not None
+    from ..models import User
+    return db.query(User).filter(User.username == username).first() is not None
