@@ -10,4 +10,5 @@ class Config:
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "")
     JWT_ACCESS_TOKEN_EXPIRES = os.getenv("JWT_ACCESS_TOKEN_EXPIRES", "")
 
+
 settings = Config()
