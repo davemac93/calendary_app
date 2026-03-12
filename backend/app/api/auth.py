@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 from typing import List
 
 
-from ..schemas import RegisterUser, RespondUser
+from ..schemas import RegisterUser
 from ..models import User
-from ..core import create_access_token, verify_token, authenticate_user, get_password_hash, check_user_exists
+from ..core import create_access_token, verify_token, authenticate_user, get_password_hash, validate_username_unique, validate_user_exists
 from ..db import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
@@ -14,8 +14,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 @router.post("/register")
 async def create_user(user_data: RegisterUser, db: Session = Depends(get_db)):
-    if check_user_exists(db, user_data.username):
-        raise HTTPException(status_code=400, detail="Username already exists")
+    validate_username_unique(db, user_data.username)
     user = User(
         username=user_data.username,
         password=get_password_hash(user_data.password)
@@ -28,15 +27,8 @@ async def create_user(user_data: RegisterUser, db: Session = Depends(get_db)):
 @router.post("/login")
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
     access_token = create_access_token(data={"sub": str(user.id)})
     return {"access_token": access_token, "token_type": "bearer"}
-
-@router.get("/users", response_model=List[RespondUser])
-async def get_users(db: Session = Depends(get_db)):
-    users = db.query(User).all()
-    return users
 
 @router.get("/profile")
 def get_profile(token: str = Depends(oauth2_scheme)):

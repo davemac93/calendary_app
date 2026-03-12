@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from pwdlib.exceptions import UnknownHashError
-
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from .config import settings
 from .security import verify_password
+from ..models import User
 
 
 def create_access_token(data: dict) -> str:
@@ -29,15 +30,16 @@ def verify_token(token: str, credentials_exception) -> str:
 
 
 def authenticate_user(db: Session, username: str, password: str):
-    from ..models import User
     user = db.query(User).filter(User.username == username).first()
 
     if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
         return None
 
     try:
         # If verify_password fails due to a bad hash format, it triggers the except block
         if not verify_password(password, user.password):
+            raise HTTPException(status_code=401, detail="Invalid credentials")
             return None
     except (UnknownHashError, ValueError, TypeError):
         # We catch the traceback here and return None to signal 'auth failed'
@@ -45,6 +47,28 @@ def authenticate_user(db: Session, username: str, password: str):
 
     return user
 
-def check_user_exists(db: Session, username: str) -> bool:
+
+
+def validate_username_unique(db: Session, username: str):
+    """
+    Checks if a username exists.
+    Raises a 400 error if it does, otherwise returns None.
+    """
     from ..models import User
-    return db.query(User).filter(User.username == username).first() is not None
+    user_exists = db.query(User).filter(User.username == username).first()
+
+    if user_exists:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists"
+        )
+    return None
+
+def validate_user_exists(db: Session, username: str):
+
+    user = db.query(User).filter(User.username == username).first()
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")
+
+    return user

@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 class RegisterUser(BaseModel):
@@ -7,10 +9,3 @@ class RegisterUser(BaseModel):
 class LoginUser(BaseModel):
     username: str
     password: str
-
-class RespondUser(BaseModel):
-    id: int
-    username: str
-
-    class Config:
-        from_attributes = True
